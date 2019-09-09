@@ -7,7 +7,23 @@ namespace CSharp2SqlLibrary {
     public class Products {
 
         // STATIC VARIABLES
-        public static Connection Connection { get; set; }  // it's statis, because the methods using it are static
+        public static Connection Connection { get; set; }  // it's static, because the methods using it are static
+
+        // Okay, so we keep most of these public, because we access them a lot from the driver class.  
+        #region  Instance Propertites
+        public int Id { get; private set; }
+        public string PartNbr { get; set; }
+        public string Name { get; set; }
+        public decimal Price { get; set; }
+        public string Unit { get; set; }
+        public string PhotoPath { get; set; }
+        public int VendorId { get; set; } // It's questionable whether we need the VendorId at ALL.   Because it's already included withing the ?reg. Id? //we won't change the VendorId to private, becasue we ahve to have a way to change that if we make a mistake or something
+
+        // and ONE MORE instance property: A Vendors object. We attach one more variable to a product instance:  The Vendors object that the product's VendorId points to
+        public Vendors Vendor { get; private set; }
+        #endregion
+
+
         // DEFINE CONSTANTS
         private const string SqlGetAll = "SELECT * FROM Products ";
         private const string SqlGetByPk = "SELECT * FROM Products WHERE Id = @Id ";
@@ -20,55 +36,53 @@ namespace CSharp2SqlLibrary {
             " PhotoPath = @PhotoPath, VendorId = @VendorId " +
             " WHERE Id = @Id ";
 
-        // Okay, so we keep most of these public, because we access them a lot from the driver class.  
-        #region  Instance Propertites
-        public int Id { get; private set; }
-        public string PartNbr { get; set; }
-        public string Name { get; set; }
-        public decimal Price { get; set; }
-        public string Unit { get; set; }
-        public string PhotoPath { get; set; }
-        public int VendorId { get; set; } // It's questionable whether we need the VendorId at ALL.   Because it's already included withing the ?reg. Id? //we won't change the VendorId to private, becasue we ahve to have a way to change that if we make a mistake or something
-
-        public Vendors Vendor { get; private set; } // this one is different.
-        #endregion
 
 
-        // is below all ok?  Went by fast...
+        private static void LoadProductFromSql(Products product, SqlDataReader myReader) {
+            product.Id = (int)myReader["Id"];
+            product.PartNbr = myReader["PartNbr"].ToString();
+            product.Name = myReader["Name"].ToString();
+            product.Price = (decimal)myReader["Price"];
+            product.Unit = myReader["Unit"].ToString();
+            product.PhotoPath = myReader["PhotoPath"]?.ToString();
+            product.VendorId = (int)myReader["VendorId"];
+        }
+
+
         public static Products GetByPk(int id) {
             var sqlcmd = new SqlCommand(SqlGetByPk, Connection.sqlConnection);
             sqlcmd.Parameters.AddWithValue("@Id", id);
-            var reader = sqlcmd.ExecuteReader();
-            if (!reader.HasRows) {
-                reader.Close();
+            var myReader = sqlcmd.ExecuteReader();
+            if (!myReader.HasRows) {
+                myReader.Close();
                 return null;
             }
-            reader.Read();
-            var product = new Products();
-            LoadProductFromSql(product, reader);
+            myReader.Read();
+            var product = new Products();   // note: here we are instantiating an instance inside its own class, not Program class
+            LoadProductFromSql(product, myReader);
+            myReader.Close();
 
-            reader.Close();
-
+                    // ...and we attach one more variable to product:  The vendor pointed to by the product's VendorId.
+                    // - essentially the same as JOIN VIEW    JOIN VIEW    JOIN VIEW
             Vendors.Connection = Connection;
-            var vendor = Vendors.GetByPk(product.VendorId);
+            Vendors vendor = Vendors.GetByPk(product.VendorId);  // VendorId, as found in product table, IS the PK field for vendor table
             product.Vendor = vendor; 
             
-            //then return the individual product:
-            return product;
+            return product;   
         }
 
 
 
         public static List<Products> GetAll() {
             var sqlcmd = new SqlCommand(SqlGetAll, Connection.sqlConnection);
-            var reader = sqlcmd.ExecuteReader();  // execute the reader
+            var myReader = sqlcmd.ExecuteReader();  // execute the myReader
             var products = new List<Products>();
-            while (reader.Read()) {
+            while (myReader.Read()) {
                 var product = new Products();
-                products.Add(product);  // add empty product instance to the hcollection.  You can Do it now, so youdont' forget later. 
-                LoadProductFromSql(product, reader);
+                products.Add(product);  // add empty product instance to collection. Can do now, so don't forget later.
+                LoadProductFromSql(product, myReader);
             }
-            reader.Close();
+            myReader.Close();
 
             //because of data reading/  opening-a-connection issue ???   We have to do the tricky thing below.  
 
@@ -84,33 +98,17 @@ namespace CSharp2SqlLibrary {
                 prod.Vendor = vendor;
             }
             return products;
-
-            // something above is "EXACTLY LIKE A JOIN"    "select p.*, v.* from products p join vendors v on v.id  p.vendorId"
-            // JOIN VIEW  JOIN VIEW    JOIN VIEW
         }
 
 
-        private static void LoadProductFromSql(Products product, SqlDataReader reader) {
-            product.Id = (int)reader["Id"];
-            product.PartNbr = reader["PartNbr"].ToString();
-            product.Name = reader["Name"].ToString();
-            product.Price = (decimal)reader["Price"];
-            product.Unit = reader["Unit"].ToString();
-            product.PhotoPath = reader["PhotoPath"]?.ToString();
-            product.VendorId = (int)reader["VendorId"];
-        }
-
-
-        // ToString Override
         public override string ToString() {
-            return $"Id={Id}, PartNbr={PartNbr}, Name={Name}, Price={Price}, Unit={Unit}, VendorId={VendorId}, Vendor={Vendor}";
+            return $"Id={Id}, PartNbr={PartNbr}, Name={Name}, Price={Price}, " +
+                $"Unit={Unit}, VendorId={VendorId}, Vendor={Vendor}";
         }
-
     }
 }
 
-/*OPTIONAL SYNTAX, FOR INSIDE LoadProductFromSql method:
-            // product.Id = reader.GetInt32(reader.GetOrdinal("Id"));  // more verbose way to do conversion.  GetOrdinal returns index of..., and you put that into GetInt32.  GetInt32 automatically casts whatever it gets into an integer
+            /* OPTIONAL SYNTAX, FOR INSIDE LoadProductFromSql method:
+            // product.Id = myReader.GetInt32(myReader.GetOrdinal("Id"));  // more verbose way to do conversion.  GetOrdinal returns index of..., and you put that into GetInt32.  GetInt32 automatically casts whatever it gets into an integer
             // There are Getdate, Getstring, GetThisAndThat, just like w/ line above.  But Greg prefers the syntax below.
-            // The problem:  The reader gives you an object.  You need to turn that object into the type you need.  
- */
+            // The problem:  The myReader gives you an object.  You need to turn that object into the type you need.   */

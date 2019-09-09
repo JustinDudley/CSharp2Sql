@@ -35,12 +35,36 @@ namespace CSharp2SqlLibrary {
             " (Code, Name, Address, City, State, Zip, Phone, Email )" +
             " VALUES (@Code, @Name, @Address, @City, @State, @Zip, @Phone, @Email) ";
 
-        /* MY WEEKEND WORK
+
+        private static void SetParameterValues(Vendors vendor, SqlCommand sqlcmd) {
+            sqlcmd.Parameters.AddWithValue("@Code", vendor.Code);
+            sqlcmd.Parameters.AddWithValue("@Name", vendor.Name);
+            sqlcmd.Parameters.AddWithValue("@Address", vendor.Address);
+            sqlcmd.Parameters.AddWithValue("@City", vendor.City);
+            sqlcmd.Parameters.AddWithValue("@State", vendor.State);
+            sqlcmd.Parameters.AddWithValue("@Zip", vendor.Zip);
+            sqlcmd.Parameters.AddWithValue("@Phone", vendor.Phone);
+            sqlcmd.Parameters.AddWithValue("@Email", vendor.Email);
+        }
+
+
+        //UPDATE
+        public static bool Update(Vendors vendor) {
+            var sqlcmd = new SqlCommand(SqlUpdate, Connection.sqlConnection);
+            SetParameterValues(vendor, sqlcmd);
+            sqlcmd.Parameters.AddWithValue("@Id", vendor.Id);
+            int rowsAffected = sqlcmd.ExecuteNonQuery();
+            return (rowsAffected == 1);
+        }
+
         //INSERT
         public static bool Insert(Vendors vendor) {
-
+            var sqlcmd = new SqlCommand(SqlInsert, Connection.sqlConnection);
+            SetParameterValues(vendor, sqlcmd);
+            int rowsAffected = sqlcmd.ExecuteNonQuery();
+            return (rowsAffected == 1);
         }
-        */
+        
 
         //DELETE
         public static bool Delete(int id) {
@@ -57,16 +81,16 @@ namespace CSharp2SqlLibrary {
 
         // try collapsing the block below.  The region stuff stays.  To create region:  Type #, look at dropdown menu
         #region Instance Properties
-        private static void LoadVendorFromSql(Vendors vendor, SqlDataReader reader) {
-            vendor.Id = ((int)reader["Id"]);
-            vendor.Code = reader["Code"].ToString(); //this is the best conversion, will continute with it now
-            vendor.Name = reader["Name"].ToString();
-            vendor.Address = reader["Address"].ToString();
-            vendor.City = reader["City"].ToString();
-            vendor.State = reader["State"].ToString();
-            vendor.Zip = reader["Zip"].ToString();
-            vendor.Phone = reader["Phone"]?.ToString(); // note the ?
-            vendor.Email = reader["Email"]?.ToString(); // note the ?
+        private static void LoadVendorFromSql(Vendors vendor, SqlDataReader myReader) {
+            vendor.Id = ((int)myReader["Id"]);
+            vendor.Code = myReader["Code"].ToString(); //this is the best conversion, will continute with it now
+            vendor.Name = myReader["Name"].ToString();
+            vendor.Address = myReader["Address"].ToString();
+            vendor.City = myReader["City"].ToString();
+            vendor.State = myReader["State"].ToString();
+            vendor.Zip = myReader["Zip"].ToString();
+            vendor.Phone = myReader["Phone"]?.ToString(); // note the ?
+            vendor.Email = myReader["Email"]?.ToString(); // note the ?
             #endregion
         }
 
@@ -74,57 +98,45 @@ namespace CSharp2SqlLibrary {
         public static Vendors GetByPk(int id) {
             var sqlcmd = new SqlCommand(SqlGetByPk, Connection.sqlConnection);
             sqlcmd.Parameters.AddWithValue("@Id", id);
-            var reader = sqlcmd.ExecuteReader();
-            if (!reader.HasRows) {
-                reader.Close();
+            var myReader = sqlcmd.ExecuteReader();
+            if (!myReader.HasRows) {
+                myReader.Close();
                 return null;
             }
-            reader.Read();
+            myReader.Read();
             var vendor = new Vendors();
-            LoadVendorFromSql(vendor, reader);
-
-            reader.Close();
+            LoadVendorFromSql(vendor, myReader);
+            
+            myReader.Close();
             return vendor;
-
-                //WILL NEED A STRING OVERRIDE IN THIS CLASS, JUST LIKE USERS
         }
-
-
-        //JD Attempt:
-        //GET BY PK
-        //public static Vendors GetByPk(int id) {
-        //    string sql = "SELECT FROM Vendors WHERE Id = @Id";
-        //    SqlCommand sqlcmd = new SqlCommand(sql, Connection.sqlConnection);
-        //    sqlcmd.Parameters.AddWithValue(@Id = id);
-        //    var reader = sqlcmd.ExecuteReader();
-        //    reader.Read();
-        //    if(!reader.HasRows) {
-
-        //    }
-
-        //    if(reader[id] == id) {
-        //        LoadVendorFromSql()
-        //    }
-        //}
 
 
         // GET ALL 
         public static List<Vendors> GetAll() {
             // don't need sql statement this time, because we defined it up above
             var sqlcmd = new SqlCommand(SqlGetAll, Connection.sqlConnection);  // the underrscore is actually a SqlConnection.  So he would like to rename this:  _Connection  changed to sqlConnection
-            var reader = sqlcmd.ExecuteReader();
+            var myReader = sqlcmd.ExecuteReader();
             var vendors = new List<Vendors>();
-            while(reader.Read()) {
+            while(myReader.Read()) {
                 var vendor = new Vendors();
                 vendors.Add(vendor); //"I do that, even though I haven't filled it with data, so I don't forget to do it"
-                LoadVendorFromSql(vendor, reader);
+                LoadVendorFromSql(vendor, myReader);
             }
-            reader.Close();
+            myReader.Close();
             return vendors;
         }
 
 
-        //Whoops, I just changed _Connection to sqlConnection EVERYWHERE, including in my comments!!!
-
+        public override string ToString() {
+            return $"Id: {Id}, Code: {Code}, Name: {Name}, Address: {Address}, {City}, {State},  " +
+                $"Phone = {Phone}, Email: {Email} ";
+                
+        }
     }
 }
+
+
+      //Whoops, I just changed _Connection to sqlConnection EVERYWHERE, including in my comments!!!
+
+
