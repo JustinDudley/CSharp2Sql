@@ -47,6 +47,11 @@ namespace CSharp2SqlLibrary {
             sqlcmd.Parameters.AddWithValue("@Email", vendor.Email);
         }
 
+        /* JD attempt, Monday earlyk a.m.
+        //GETBYCODE
+        public static Vendors GetByCode(string code) {
+            var sqlcmd = new Sql
+        }       */
 
         //UPDATE
         public static bool Update(Vendors vendor) {

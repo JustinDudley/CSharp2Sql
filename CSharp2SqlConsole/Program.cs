@@ -13,6 +13,26 @@ namespace CSharp2SqlConsole {
             conn.Open();    // ...and call a method on this new object
             Products.Connection = conn;
 
+            var product = new Products() {      // OKAY, here is a new, popular, alternate syntax for constructor.  Note semicolon AFTER the curly braces.  Good esp for testing.  Can choose to initialize with any properties you want without constructing multiple constructors to do so.
+                PartNbr = "XYZ001", Name = "XYKZ Part", Price = 10, Unit = "EACH", PhotoPath = null, VendorId = 3  //note LACK of semicolon on this line    
+            };
+            try {       // Here's a nice try-catch block.  At least it tells the caller what's wrong. 
+                // INSERT
+                var success = Products.Insert(product);
+                // UPDATE,  product.id = 3
+                var p = Products.GetByPk(3);
+                p.Name = "GregPartXYZff";
+                p.VendorId = 9;  // THIS ISN'T WORKING.  THIS ISN'T WORKING
+                success = Products.Update(p);
+                //DELETE
+                success = Products.Delete(3);   //Is THIS one working?????
+
+            } catch(Exception ex) {
+                Console.WriteLine($"Exception occurred: {ex.Message}");
+            }
+
+
+
 
             // GetByPk
             Products unicycle = Products.GetByPk(2);
@@ -35,6 +55,11 @@ namespace CSharp2SqlConsole {
             conn.Open();   
             Vendors.Connection = conn;
 
+            /*
+            //GETBYCODE, JD attempt, early a.m.
+            Vendors vCo = Vendors.GetByCode("JGGL");
+            Console.WriteLine(vCo);
+            */
             //GETALL
             var vendors = Vendors.GetAll();
             foreach (var ven in vendors) {

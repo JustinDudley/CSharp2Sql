@@ -38,6 +38,52 @@ namespace CSharp2SqlLibrary {
 
 
 
+        //two ways, iknsert
+        //best:  Pass in an instance of the product.
+
+        public static bool Insert(Products product) {       // most load up the vendor Id before we pass it into the insert
+            var sqlcmd = new SqlCommand(SqlInsert, Connection.sqlConnection);
+            SetParameterValues(product, sqlcmd);
+            int rowsAffected = sqlcmd.ExecuteNonQuery();
+            return (rowsAffected == 1);
+        }
+
+        // ideally, would refactor this block and delete, combine stuff
+        public static bool Update(Products product) {
+            var sqlcmd = new SqlCommand(SqlUpdate, Connection.sqlConnection);
+            SetParameterValues(product, sqlcmd);
+            sqlcmd.Parameters.AddWithValue("@Id", product.Id);            //must pass in ID too
+            var rowsAffected = sqlcmd.ExecuteNonQuery();
+            return rowsAffected == 1;
+        }
+
+        private static void SetParameterValues(Products product, SqlCommand sqlcmd) {
+            sqlcmd.Parameters.AddWithValue("@PartNbr", product.PartNbr);
+            sqlcmd.Parameters.AddWithValue("@Name", product.Name);
+            sqlcmd.Parameters.AddWithValue("@Price", product.Price);
+            sqlcmd.Parameters.AddWithValue("@Unit", product.Unit);
+            sqlcmd.Parameters.AddWithValue("@Photopath", (object)product.PhotoPath ?? DBNull.Value); // "coalescing operator"
+            sqlcmd.Parameters.AddWithValue("@VendorId", product.VendorId);
+        }
+
+        public static bool Delete(int id) {
+            var sqlcmd = new SqlCommand(SqlDelete, Connection.sqlConnection);
+            sqlcmd.Parameters.AddWithValue("@Id", id);            //must pass in ID too
+            var rowsAffected = sqlcmd.ExecuteNonQuery();
+            return rowsAffected == 1;
+        }
+
+
+        public static bool Delete(Products product) {
+            // pass in the one to delete.  Diff from vendor and user where we did public static boo Delete(innt id).  That won't work here AS WELL.  Both are valid.  Actually, you can use BOTH in the program.  Id is simpler for user, but Product one can be okay, because the product one can just call the id one
+            //Ideally, we let the new one call the old one
+            //instead of putting another SQL command, just do:      (Could have done it in the otehr diretion too.  HAVe the other delete method call THIS one.  But:  You don't want a big body in both delete methods.  Have one call the other
+
+            //consistent with Update and ?Insert? this way, using THIS delete method.
+            return Delete(product.Id);
+        }
+
+
         private static void LoadProductFromSql(Products product, SqlDataReader myReader) {
             product.Id = (int)myReader["Id"];
             product.PartNbr = myReader["PartNbr"].ToString();
