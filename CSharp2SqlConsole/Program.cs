@@ -12,25 +12,52 @@ namespace CSharp2SqlConsole {
             var conn = new Connection(@"localhost\sqlexpress", "PrsDb");    // instantiate/construct an object, and...
             conn.Open();    // ...and call a method on this new object
             Products.Connection = conn;
+            Vendors.Connection = conn;  // these two lines appear here together because of GetProducts()
 
-            var product = new Products() {      // OKAY, here is a new, popular, alternate syntax for constructor.  Note semicolon AFTER the curly braces.  Good esp for testing.  Can choose to initialize with any properties you want without constructing multiple constructors to do so.
-                PartNbr = "XYZ001", Name = "XYKZ Part", Price = 10, Unit = "EACH", PhotoPath = null, VendorId = 3  //note LACK of semicolon on this line    
-            };
-            try {       // Here's a nice try-catch block.  At least it tells the caller what's wrong. 
+
+            //   *****  *****  New, popular, alternate syntax for constructor. Note semicolon AFTER the curly braces.  Good esp for testing.  
+            //   *****  *****  Can choose to initialize with any properties you want without constructing multiple constructors to do so.
+            //   *****  *****  Note semicolon AFTER the curly braces.  Good esp for testing.  
+            var product = new Products() {      
+                PartNbr = "XYZ001", Name = "XYKZ Part", Price = 10, Unit = "EACH", PhotoPath = null,   //note LACK of semicolon on this line    
+                VendorId = Vendors.GetByCode("PSFX").Id     //The Id of Vendor Pustefix, which is 1
+            };  
+
+
+
+            try {       // Here's a nice try-catch block.  It tells the caller what's wrong. 
+                Console.WriteLine("Product list for Vendor NYC Clown Studio:");
+                var productList = Vendors.GetProducts("NYCC");
+                foreach (var prod in productList) {
+                    Console.WriteLine(prod);
+                }
+
+
                 // INSERT
                 var success = Products.Insert(product);
-                // UPDATE,  product.id = 3
-                var p = Products.GetByPk(3);
-                p.Name = "GregPartXYZff";
-                p.VendorId = 9;  // THIS ISN'T WORKING.  THIS ISN'T WORKING
-                success = Products.Update(p);
-                //DELETE
-                success = Products.Delete(3);   //Is THIS one working?????
 
-            } catch(Exception ex) {
+
+                // UPDATE
+                Products p = Products.GetByPartNbr("XYZ001");   //  formerly:  Products p = Products.GetByPk(4);
+                p.Name = "GregPartXYZff";
+                p.VendorId = Vendors.GetByCode("NYCC").Id;  // is this working???
+                success = Products.Update(p);  // Result:  The product named "GregPartXKYZff" is now vended/sold by NYCC (New York City Clown Studio).
+
+
+                //DELETE
+                success = Products.Delete(1);   //Is THIS one working?????
+                Console.WriteLine("\nProduct with Id=1 deleted?  " + success);
+                
+
+                ////This is a much better query when you need an id. Query by Part Number, don't need to knokw the id. I just know it's STEPLADD.
+                var prd = Products.GetByPartNbr("STEPLADD");
+                Console.WriteLine();
+                Console.WriteLine(prd);
+
+            }
+            catch (Exception ex) {
                 Console.WriteLine($"Exception occurred: {ex.Message}");
             }
-
 
 
 
@@ -54,12 +81,8 @@ namespace CSharp2SqlConsole {
             Connection conn = new Connection(@"localhost\sqlexpress", "PrsDb");
             conn.Open();   
             Vendors.Connection = conn;
-
-            /*
-            //GETBYCODE, JD attempt, early a.m.
-            Vendors vCo = Vendors.GetByCode("JGGL");
-            Console.WriteLine(vCo);
-            */
+           
+          
             //GETALL
             var vendors = Vendors.GetAll();
             foreach (var ven in vendors) {
@@ -90,7 +113,12 @@ namespace CSharp2SqlConsole {
             vendorA.Phone = "555-444-3333";
             vendorA.Email = "RUs@RUs.com";
             Console.WriteLine($"Vendor insertion successful? {Vendors.Insert(vendorA)}");
-            
+
+
+            //GETBYCODE
+            Vendors vendster = Vendors.GetByCode("WOOF");
+            Console.WriteLine(vendster);
+
 
             conn.Close();
         }
@@ -155,11 +183,12 @@ namespace CSharp2SqlConsole {
         }
 
 
-        void RefreshDatabase() {
+        void RefreshDatabase() {    
             var conn = new Connection(@"localhost\sqlexpress", "PrsDb");   // "PrsDb" should maybe be "master" instead.
             conn.Open();
             FileToDb.Connection = conn;
-                // 2-step process, where perhaps I should just have 1:
+            
+            // 2-step process, where perhaps I should just have 1:
             string[] sqlLines = FileToDb.FileToStringArr();
             FileToDb.StringArrToDb(sqlLines);
             conn.Close();
@@ -170,7 +199,7 @@ namespace CSharp2SqlConsole {
         static void Main(string[] args) {
             var pgm = new Program();
 
-           pgm.RefreshDatabase();
+           pgm.RefreshDatabase(); // NOTE:  If my sourcefile includes ANY comments   "--", this program will crash  :)
            //pgm.RunVendorsTest();
            // pgm.RunUsersTest();
             pgm.RunProductsTest();

@@ -27,6 +27,7 @@ namespace CSharp2SqlLibrary {
         // DEFINE CONSTANTS
         private const string SqlGetAll = "SELECT * FROM Products ";
         private const string SqlGetByPk = "SELECT * FROM Products WHERE Id = @Id ";
+        private const string SqlGetByPrtNbr = SqlGetAll + " Where PartNbr = @PartNbr ";   // CONCAT 
         private const string SqlDelete = "DELETE from Products WHERE Id = @Id ";
         private const string SqlInsert = "INSERT Products " +
             " (PartNbr, Name, Price, Unit, PhotoPath, VendorId) " +
@@ -37,9 +38,24 @@ namespace CSharp2SqlLibrary {
             " WHERE Id = @Id ";
 
 
+        public static Products GetByPartNbr(string partNbr) {
+            var sqlcmd = new SqlCommand(SqlGetByPrtNbr, Connection.sqlConnection);
+            sqlcmd.Parameters.AddWithValue("@PartNbr", partNbr);
+            var reader = sqlcmd.ExecuteReader();
+            // got nothing back?  return null
+            if(!reader.HasRows) {
+                reader.Close();
+                return null;
+            }
+            reader.Read();  // moves the pointer
+            var product = new Products();
+            LoadProductFromSql(product, reader);
+            reader.Close();
+            return product;
+        }
 
-        //two ways, iknsert
-        //best:  Pass in an instance of the product.
+
+        // Two ways to do insert.  Best: pass in an instance of the product.
 
         public static bool Insert(Products product) {       // most load up the vendor Id before we pass it into the insert
             var sqlcmd = new SqlCommand(SqlInsert, Connection.sqlConnection);
@@ -84,7 +100,7 @@ namespace CSharp2SqlLibrary {
         }
 
 
-        private static void LoadProductFromSql(Products product, SqlDataReader myReader) {
+        public static void LoadProductFromSql(Products product, SqlDataReader myReader) {  //accessed from Vendors class, so: public
             product.Id = (int)myReader["Id"];
             product.PartNbr = myReader["PartNbr"].ToString();
             product.Name = myReader["Name"].ToString();

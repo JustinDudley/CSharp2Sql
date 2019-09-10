@@ -31,10 +31,10 @@ namespace CSharp2SqlLibrary {
         }
 
 
+
             // [connStr]:   connection string format:  " 1. Server & instance;  2. the database;  3. authentication  "
         // trusted_connection = true    --will use same user that you logged into SQL with
       
-
 
         // instantiate.  THEN open the connection
         //COULD create an instance, then open it, close it, open it, close it...

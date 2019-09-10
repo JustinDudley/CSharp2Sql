@@ -16,6 +16,18 @@ namespace CSharp2SqlLibrary {
         public static string[] FileToStringArr() {
             string path = @"C:\repos\SQLscripts\PrsDb-create-database-comments-not-allowed.sql";
             string[] sqlLines = File.ReadAllLines(path);
+
+            /*              NEW PLAN, TO ALLOW ME TO ADD COMMENTS TO MY .SQL FILES.
+                    I WANT TO ELIMINATE LINES THAT HAVE COMMENTS (AS INDICATED BY PRESENCE OF --)
+                      -FIRST SHOULD ELIMATE LEADING WHITE SPACE, THEN CHECK FOR "--" CHARACTERS, THEN NOT INCLUDE THOSE LINES
+            string[] prelimSqlLines = File.ReadAllLines(path);
+            List<string> finalSqlLines = new List<string>;      // must make function return list, not array, and add to Library here AND in program
+            foreach(var line in prelimSqlLines) {
+                if !line.substring(2).equals("--") {
+                finlSqlLines.Add(line);
+            }            */
+
+
             return sqlLines;
         }
 

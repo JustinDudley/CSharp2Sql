@@ -26,6 +26,7 @@ namespace CSharp2SqlLibrary {
         // this time, we embed sql statements differently from how we did with Users:
         private const string SqlGetAll = "SELECT * FROM Vendors";  //const means constant.  C# keyword?
         private const string SqlGetByPk = SqlGetAll + " WHERE Id = @Id";  // or, could use interpolated string  $
+        private const string SqlGetByCode = SqlGetAll + " WHERE Code = @Code ";
         private const string SqlDelete = "DELETE FROM Vendors WHERE Id = @Id";  // semicolin inside quotes is okay, yes?
         private const string SqlUpdate = "UPDATE Vendors SET " +
             " Code = @Code, Name = @Name, Address = @Address, City = @City, State = @State, Zip = @Zip, " +
@@ -34,6 +35,9 @@ namespace CSharp2SqlLibrary {
         private const string SqlInsert = "INSERT into Vendors " +
             " (Code, Name, Address, City, State, Zip, Phone, Email )" +
             " VALUES (@Code, @Name, @Address, @City, @State, @Zip, @Phone, @Email) ";
+        private const string SqlGetProducts = "SELECT * from Products Where VendorId = "
+            + " (SELECT id from Vendors Where Code = @Code)";  
+        //                      ****   **** Line above:  SUBQUERY  (==SUBSELECT)    *****
 
 
         private static void SetParameterValues(Vendors vendor, SqlCommand sqlcmd) {
@@ -47,11 +51,40 @@ namespace CSharp2SqlLibrary {
             sqlcmd.Parameters.AddWithValue("@Email", vendor.Email);
         }
 
-        /* JD attempt, Monday earlyk a.m.
+
+        // RETURNS A LIST<T>  OF PRODUCTS WHEN PASSED A VENDOR CODE
+        public static List<Products> GetProducts(string code) {
+            var sqlcmd = new SqlCommand(SqlGetProducts, Connection.sqlConnection);
+            sqlcmd.Parameters.AddWithValue("@Code", code);
+            var reader = sqlcmd.ExecuteReader();
+            var products = new List<Products>();
+            while (reader.Read()) {
+                var product = new Products();
+                products.Add(product);
+                Products.LoadProductFromSql(product, reader);
+            }
+            reader.Close();
+            return products;
+        }
+
+
+
         //GETBYCODE
         public static Vendors GetByCode(string code) {
-            var sqlcmd = new Sql
-        }       */
+            var sqlcmd = new SqlCommand(SqlGetByCode, Connection.sqlConnection);
+            sqlcmd.Parameters.AddWithValue("@Code", code);
+            var reader = sqlcmd.ExecuteReader();
+            if(!reader.HasRows) {
+                reader.Close();
+                return null;
+            }
+            reader.Read();
+            var vendor = new Vendors();
+            LoadVendorFromSql(vendor, reader);
+            reader.Close();
+            return vendor;
+        }
+
 
         //UPDATE
         public static bool Update(Vendors vendor) {
